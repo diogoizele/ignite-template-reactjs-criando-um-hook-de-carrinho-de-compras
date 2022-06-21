@@ -1,5 +1,5 @@
 import { AxiosResponse } from "axios";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { api } from "../services/api";
 
@@ -23,6 +23,24 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
     return [];
   });
+
+  /**
+   * ! Truquezinho para atualizaro LocalStorage sempre
+   * que o cart for atualizado.
+   */
+  const prevCartRef = useRef<ProductCartItem[]>();
+
+  useEffect(() => {
+    prevCartRef.current = cart;
+  });
+
+  const cartPreviousValue = prevCartRef.current ?? cart;
+
+  useEffect(() => {
+    if (cartPreviousValue !== cart) {
+      localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
+    }
+  }, [cartPreviousValue, cart]);
 
   const addProduct = async (productId: number) => {
     try {
@@ -53,7 +71,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       }
 
       setCart(updatedCart);
-      localStorage.setItem("@RocketShoes:cart", JSON.stringify(updatedCart));
     } catch {
       toast.error("Erro na adição do produto");
     }
@@ -67,7 +84,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       if (productIndex !== -1) {
         updatedCart.splice(productIndex, 1);
         setCart(updatedCart);
-        localStorage.setItem("@RocketShoes:cart", JSON.stringify(updatedCart));
       } else {
         throw Error();
       }
@@ -106,10 +122,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       });
 
       setCart(productAddedInCart);
-      localStorage.setItem(
-        "@RocketShoes:cart",
-        JSON.stringify(productAddedInCart)
-      );
     } catch {
       toast.error("Erro na alteração de quantidade do produto");
     }
